@@ -60,6 +60,13 @@ body {
   padding: 0;
 }
 
+.stitch-page {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  border: 0;
+}
+
 body {
   min-height: 100vh;
   background: #faf9f6;

@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:3187",
     trace: "retain-on-failure",
   },
   projects: [
@@ -19,9 +19,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start -- -p 3000",
-    reuseExistingServer: true,
+    command: "npm run start -- -p 3187",
+    reuseExistingServer: false,
     timeout: 30_000,
-    url: "http://127.0.0.1:3000",
+    url: "http://127.0.0.1:3187",
   },
 });

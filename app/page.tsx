@@ -1,5 +1,9 @@
-import { PremiumLanding } from "@/components/premium/PremiumLanding";
-
 export default function HomePage() {
-  return <PremiumLanding />;
+  return (
+    <iframe
+      className="stitch-page"
+      src="/stitch/flux-pet.html"
+      title="Flux Pet — Gestão Acolhedora e Inteligente"
+    />
+  );
 }
