@@ -15,6 +15,21 @@ test("publica a landing Next.js componentizada com ícones locais", async ({ pag
   await expect(page.locator("#dashboard")).toBeVisible();
   await expect(page.locator("#faq")).toBeVisible();
 
+  const images = page.locator("main img");
+  for (const index of [0, 1, 2]) {
+    await images.nth(index).scrollIntoViewIfNeeded();
+    await expect.poll(() => images.nth(index).evaluate((image) => ({
+      complete: (image as HTMLImageElement).complete,
+      naturalWidth: (image as HTMLImageElement).naturalWidth,
+      src: (image as HTMLImageElement).getAttribute("src"),
+    }))).toMatchObject({ complete: true, naturalWidth: 512 });
+    await expect(images.nth(index)).toHaveAttribute("src", /^\/stitch\/assets\//);
+  }
+
+  const heroCard = page.getByTestId("hero-floating-card");
+  await expect(heroCard).toBeVisible();
+  expect(await heroCard.evaluate((card) => getComputedStyle(card).animationName)).toBe("floatAlt");
+
   const iconCheck = await page.locator(".material-symbols-outlined").evaluateAll((icons) =>
     icons.map((icon) => ({
       text: icon.textContent?.trim(),
