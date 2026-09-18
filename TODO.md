@@ -193,4 +193,3 @@ assinados; nenhum TODO crítico aberto.
 - Provedor fiscal NFC-e/NF-e: fora do núcleo até autorização específica.
 - Provedor de WhatsApp: fora do núcleo até autorização/custo específico.
 - Política comercial/pagamentos SaaS: fora do escopo atual.
-

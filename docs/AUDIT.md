@@ -1,7 +1,9 @@
 # FP-001 — Auditoria técnica e funcional
 
-Data: 2026-09-18  
-Repositório: `fluxsdigital/flux-pet`  
+Data: 2026-09-18
+
+Repositório: `fluxsdigital/flux-pet`
+
 Branch: `main`
 
 ## Estado atual
@@ -89,4 +91,3 @@ dados ou regras de negócio.
 - O repositório estava sincronizado com `origin/main` no início da auditoria.
 - Arquivos locais `AGENTS.md` e `CLAUDE.md` já existiam sem rastreamento e não
   pertencem a esta entrega.
-
