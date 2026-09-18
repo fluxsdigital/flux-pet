@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum StoreStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Organization {
+  id        String             @id @default(cuid())
+  name      String
+  slug      String             @unique
+  status    OrganizationStatus @default(ACTIVE)
+  timezone  String             @default("America/Sao_Paulo")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  stores    Store[]
+  audit     AuditEvent[]
+}
+
+model Store {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  name           String
+  slug           String
+  status         StoreStatus  @default(ACTIVE)
+  timezone       String       @default("America/Sao_Paulo")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  audit          AuditEvent[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status])
+}
+
+model AuditEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String?
+  store          Store?       @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  actorId        String?
+  action         String
+  entityType     String
+  entityId       String
+  metadata       Json?
+  occurredAt     DateTime     @default(now())
+
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, entityType, entityId])
+}

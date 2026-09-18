@@ -11,12 +11,19 @@ Requer Node.js 20 ou superior.
 
 ```bash
 npm install
+npm run db:up
+npm run db:migrate
 npm run dev
 npm run lint
 npm run typecheck
 npm run build
+npm run test:unit
+npm run test:integration
 npm run test:e2e
 ```
+
+Copie `.env.example` para `.env` antes dos comandos de banco. O PostgreSQL
+local é publicado somente em `127.0.0.1:5434`.
 
 ## Conteúdo publicado
 
@@ -31,3 +38,12 @@ npm run test:e2e
 
 As rotas antigas `/acolhedora`, `/gestao-inteligente` e
 `/gestao-inteligente-copia` foram removidas após a ressincronização.
+
+## Fundação do sistema
+
+- `/sistema`: entrada isolada da aplicação em construção.
+- `/api/health`: saúde do processo e conexão PostgreSQL.
+- `prisma/`: schema e migrations versionadas.
+- [`TODO.md`](TODO.md): sequência de entregas e critérios de aceite.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): decisões e operação local.
+- [`docs/MVP.md`](docs/MVP.md): regras e fórmulas do MVP.

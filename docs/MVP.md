@@ -166,4 +166,3 @@ prontuário veterinário, e-commerce e cobrança da assinatura SaaS.
 - Estados vazio, carregando, erro e sucesso existem em telas operacionais.
 - Fluxos críticos funcionam em 390 px e desktop, com teclado e labels.
 - Landing `/` continua pública e visualmente preservada.
-

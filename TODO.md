@@ -33,20 +33,20 @@ Dependências: FP-001.
 Aceite: especificação sem ambiguidades para schema e testes; fiscal/WhatsApp
 marcados como integração futura, sem promessas técnicas falsas.
 
-### FP-003 — Fundação técnica — `IN_PROGRESS`
+### FP-003 — Fundação técnica — `DONE`
 
 Dependências: FP-002.
 
-- [ ] Criar route groups preservando `/` e adicionando shell interno.
-- [ ] Configurar PostgreSQL Docker, ORM, migrations e seed de teste.
-- [ ] Configurar ambiente tipado, validação, erros e logs estruturados.
-- [ ] Adicionar testes unitários e de integração com banco real.
-- [ ] Adicionar CI local reproduzível e `.env.example` sem segredos.
+- [x] Preservar `/` e adicionar entrada isolada do sistema.
+- [x] Configurar PostgreSQL Docker, ORM e migration inicial.
+- [x] Configurar ambiente tipado, health check e logs estruturados.
+- [x] Adicionar testes unitários e de integração com banco real.
+- [x] Adicionar pipeline local reproduzível e `.env.example` sem segredos.
 
 Aceite: banco sobe do zero, migrations idempotentes, health check e pipeline
 lint/typecheck/unit/integration/build verdes.
 
-### FP-004 — Autenticação e isolamento — `PENDING`
+### FP-004 — Autenticação e isolamento — `IN_PROGRESS`
 
 Dependências: FP-003.
 
