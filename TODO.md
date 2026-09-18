@@ -6,7 +6,7 @@ de testes, revisão, commit, push e verificação do deploy aplicável.
 
 ## Sequência e critérios
 
-### FP-001 — Auditoria técnica/funcional — `IN_PROGRESS`
+### FP-001 — Auditoria técnica/funcional — `DONE`
 
 Dependências: nenhuma.
 
@@ -14,26 +14,26 @@ Dependências: nenhuma.
 - [x] Mapear promessas da landing para capacidades reais.
 - [x] Registrar lacunas, riscos e limites do MVP.
 - [x] Criar este TODO com dependências e critérios.
-- [ ] Validar documentação, commitar, fazer push e confirmar Vercel.
+- [x] Validar documentação, commitar, fazer push e confirmar Vercel.
 
 Aceite: `docs/AUDIT.md` e `TODO.md` versionados; landing inalterada e build
 verde.
 
-### FP-002 — Especificação do MVP — `PENDING`
+### FP-002 — Especificação do MVP — `DONE`
 
 Dependências: FP-001.
 
-- [ ] Definir personas OWNER, MANAGER, CASHIER e STOCK.
-- [ ] Descrever onboarding, compra/entrada, venda, cancelamento/devolução,
+- [x] Definir personas OWNER, MANAGER, CASHIER e STOCK.
+- [x] Descrever onboarding, compra/entrada, venda, cancelamento/devolução,
   despesa, fechamento e leitura do dashboard.
-- [ ] Documentar glossário, fórmulas, arredondamento e exemplos verificáveis.
-- [ ] Fixar caixa x competência, custo de estoque e fronteiras do MVP.
-- [ ] Produzir mapa entidade → regra → tela → endpoint/caso de uso.
+- [x] Documentar glossário, fórmulas, arredondamento e exemplos verificáveis.
+- [x] Fixar caixa x competência, custo de estoque e fronteiras do MVP.
+- [x] Produzir mapa entidade → regra → tela → endpoint/caso de uso.
 
 Aceite: especificação sem ambiguidades para schema e testes; fiscal/WhatsApp
 marcados como integração futura, sem promessas técnicas falsas.
 
-### FP-003 — Fundação técnica — `PENDING`
+### FP-003 — Fundação técnica — `IN_PROGRESS`
 
 Dependências: FP-002.
 
