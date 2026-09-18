@@ -1,11 +1,14 @@
 # Validação
 
-Ressincronização realizada em 2026-09-17.
+Conversão para componentes validada em 2026-09-18.
 
-- O Stitch informa 4 registros de tela, mas disponibiliza HTML somente para
-  `flux_pet_gest_o_acolhedora_e_inteligente`; essa é a página publicada em `/`.
+- A tela `flux_pet_gest_o_acolhedora_e_inteligente` é publicada em `/` pelo
+  App Router, sem HTML estático ou `iframe` em tempo de execução.
 - Três páginas antigas/duplicadas foram removidas das rotas públicas.
-- Os 39 elementos Material Symbols usam a fonte local
-  `public/fonts/material-symbols-outlined.ttf`, inclusive dentro do iframe.
+- Os Material Symbols usam a fonte local
+  `public/fonts/material-symbols-outlined.ttf`.
 - Os três JPEGs atuais do Stitch estão armazenados em `public/stitch/assets`.
-- `npm run lint` e `npm run build` foram aprovados.
+- A suíte Playwright valida desktop e mobile, ausência de `iframe`, seções
+  principais, interação do FAQ, fontes locais e rotas removidas.
+- `npm run lint`, `npm run typecheck`, `npm run build` e `npm run test:e2e`
+  foram aprovados.
