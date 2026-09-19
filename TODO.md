@@ -59,19 +59,19 @@ Dependências: FP-003.
 Aceite: recursos cross-tenant retornam não encontrado; matriz de autorização e
 E2E de dois tenants verdes.
 
-### FP-005 — Cadastros — `IN_PROGRESS`
+### FP-005 — Cadastros — `DONE`
 
 Dependências: FP-004.
 
-- [ ] Produtos, categorias, fornecedores, clientes e serviços.
-- [ ] SKU/código de barras único por loja, unidades e status ativo/inativo.
-- [ ] Preço de venda, custo de referência e impostos apenas como campos
+- [x] Produtos, categorias, fornecedores, clientes e serviços.
+- [x] SKU/código de barras único por loja, unidades e status ativo/inativo.
+- [x] Preço de venda, custo de referência e impostos apenas como campos
   preparatórios, sem cálculo fiscal inventado.
-- [ ] Busca, filtros, paginação e importação futura documentada.
+- [x] Busca, filtros, paginação e importação futura documentada.
 
 Aceite: CRUDs escopados e validados, sem exclusão destrutiva de item já usado.
 
-### FP-006 — Estoque — `PENDING`
+### FP-006 — Estoque — `IN_PROGRESS`
 
 Dependências: FP-005.
 

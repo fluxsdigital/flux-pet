@@ -30,6 +30,20 @@ enum MembershipStatus {
   INACTIVE
 }
 
+enum CatalogStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductUnit {
+  UNIT
+  KILOGRAM
+  GRAM
+  LITER
+  MILLILITER
+  PACKAGE
+}
+
 model Organization {
   id          String             @id @default(cuid())
   name        String
@@ -41,6 +55,11 @@ model Organization {
   stores      Store[]
   audit       AuditEvent[]
   memberships Membership[]
+  categories  Category[]
+  products    Product[]
+  suppliers   Supplier[]
+  customers   Customer[]
+  services    Service[]
 }
 
 model Store {
@@ -55,9 +74,116 @@ model Store {
   updatedAt      DateTime      @updatedAt
   audit          AuditEvent[]
   access         StoreAccess[]
+  categories     Category[]
+  products       Product[]
+  suppliers      Supplier[]
+  customers      Customer[]
+  services       Service[]
 
   @@unique([organizationId, slug])
   @@index([organizationId, status])
+}
+
+model Category {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  name           String
+  slug           String
+  status         CatalogStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  products       Product[]
+  services       Service[]
+
+  @@unique([storeId, slug])
+  @@index([organizationId, storeId, status])
+}
+
+model Product {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  categoryId     String?
+  category       Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name           String
+  sku            String
+  barcode        String?
+  unit           ProductUnit   @default(UNIT)
+  salePrice      Decimal       @db.Decimal(14, 2)
+  referenceCost  Decimal       @db.Decimal(14, 2)
+  taxNotes       String?
+  status         CatalogStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([storeId, sku])
+  @@unique([storeId, barcode])
+  @@index([organizationId, storeId, status])
+  @@index([organizationId, name])
+}
+
+model Supplier {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  name           String
+  document       String?
+  email          String?
+  phone          String?
+  status         CatalogStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, storeId, status])
+  @@index([organizationId, name])
+}
+
+model Customer {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  name           String
+  document       String?
+  email          String?
+  phone          String?
+  petName        String?
+  status         CatalogStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, storeId, status])
+  @@index([organizationId, name])
+}
+
+model Service {
+  id              String        @id @default(cuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId         String
+  store           Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  categoryId      String?
+  category        Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name            String
+  code            String
+  salePrice       Decimal       @db.Decimal(14, 2)
+  estimatedCost   Decimal       @db.Decimal(14, 2)
+  durationMinutes Int?
+  status          CatalogStatus @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([storeId, code])
+  @@index([organizationId, storeId, status])
+  @@index([organizationId, name])
 }
 
 model User {

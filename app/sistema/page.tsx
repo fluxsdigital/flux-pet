@@ -26,7 +26,10 @@ export default async function SystemFoundationPage() {
         <p className="mt-space-sm text-body-lg text-on-surface-variant">
           Olá, {session.user.name}. Seu acesso <strong>{membership.role}</strong> está ativo para {membership.storeAccess.length} loja(s).
         </p>
-        <Link className="mt-space-lg inline-flex text-label-lg font-bold text-primary" href="/">Voltar para a apresentação</Link>
+        <div className="mt-space-lg flex flex-wrap gap-4">
+          <Link className="inline-flex rounded-full bg-primary px-5 py-3 text-label-lg font-bold text-white" href="/sistema/cadastros">Abrir cadastros</Link>
+          <Link className="inline-flex px-2 py-3 text-label-lg font-bold text-primary" href="/">Voltar para a apresentação</Link>
+        </div>
       </section>
     </main>
   );

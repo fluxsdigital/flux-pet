@@ -3,6 +3,8 @@ import { NextRequest } from "next/server";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { POST as onboard } from "../../app/api/onboarding/route";
+import { GET as getCatalogItem, PATCH as updateCatalogItem } from "../../app/api/catalog/[resource]/[id]/route";
+import { GET as listCatalog, POST as createCatalog } from "../../app/api/catalog/[resource]/route";
 import { GET as getStore } from "../../app/api/stores/[id]/route";
 import { PATCH as updateUser } from "../../app/api/users/[id]/route";
 import { auth } from "../../lib/auth";
@@ -48,6 +50,11 @@ async function login(email: string) {
 
 describe("authentication and tenant isolation", () => {
   afterAll(async () => {
+    await db.product.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.service.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.category.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.supplier.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.customer.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.auditEvent.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.storeAccess.deleteMany({ where: { userId: { in: createdUserIds } } });
     await db.membership.deleteMany({ where: { userId: { in: createdUserIds } } });
@@ -131,5 +138,62 @@ describe("authentication and tenant isolation", () => {
     const response = await listUsers(new NextRequest("http://localhost/api/users", { headers: { cookie } }));
     expect(response.status).toBe(403);
     await db.membership.update({ where: { id: membership.id }, data: { role: "OWNER" } });
+  });
+
+  it("creates, lists, filters and inactivates every catalog resource without cross-tenant leakage", async () => {
+    const tenantA = await db.organization.findFirstOrThrow({ where: { name: "Pet Shop A" }, include: { stores: true } });
+    const tenantB = await db.organization.findFirstOrThrow({ where: { name: "Pet Shop B" }, include: { stores: true } });
+    const cookieA = await login(emailA);
+    const cookieB = await login(emailB);
+    const storeA = tenantA.stores[0]!.id;
+    const storeB = tenantB.stores[0]!.id;
+
+    async function create(resource: string, cookie: string, body: object) {
+      return createCatalog(new NextRequest(`http://localhost/api/catalog/${resource}`, {
+        method: "POST",
+        headers: { cookie, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }), { params: Promise.resolve({ resource }) });
+    }
+
+    const categoryResponse = await create("categories", cookieA, { storeId: storeA, name: "Alimentos", slug: "alimentos" });
+    expect(categoryResponse.status).toBe(201);
+    const category = (await categoryResponse.json()) as { id: string };
+    const productResponse = await create("products", cookieA, {
+      storeId: storeA, categoryId: category.id, name: "Ração Premium", sku: `RACAO-${suffix}`,
+      barcode: `789${suffix}`, unit: "KILOGRAM", salePrice: 59.9, referenceCost: 31.45,
+    });
+    const supplierResponse = await create("suppliers", cookieA, { storeId: storeA, name: "Fornecedor Sul", email: "sul@example.test" });
+    const customerResponse = await create("customers", cookieA, { storeId: storeA, name: "Cliente Flux", petName: "Nina" });
+    const serviceResponse = await create("services", cookieA, {
+      storeId: storeA, categoryId: category.id, name: "Banho", code: `BANHO-${suffix}`,
+      salePrice: 80, estimatedCost: 24, durationMinutes: 60,
+    });
+    for (const response of [productResponse, supplierResponse, customerResponse, serviceResponse]) expect(response.status).toBe(201);
+    const product = (await productResponse.json()) as { id: string };
+
+    const list = await listCatalog(new NextRequest("http://localhost/api/catalog/products?q=Premium&page=1&pageSize=5", { headers: { cookie: cookieA } }), {
+      params: Promise.resolve({ resource: "products" }),
+    });
+    expect(list.status).toBe(200);
+    expect(((await list.json()) as { pagination: { total: number } }).pagination.total).toBe(1);
+
+    const foreignRead = await getCatalogItem(new NextRequest("http://localhost/api/catalog/products/foreign", { headers: { cookie: cookieB } }), {
+      params: Promise.resolve({ resource: "products", id: product.id }),
+    });
+    expect(foreignRead.status).toBe(404);
+    const foreignCreate = await create("products", cookieB, {
+      storeId: storeB, categoryId: category.id, name: "Cross tenant", sku: `CROSS-${suffix}`,
+      salePrice: 1, referenceCost: 1,
+    });
+    expect(foreignCreate.status).toBe(404);
+
+    const inactive = await updateCatalogItem(new NextRequest(`http://localhost/api/catalog/products/${product.id}`, {
+      method: "PATCH",
+      headers: { cookie: cookieA, "content-type": "application/json" },
+      body: JSON.stringify({ status: "INACTIVE" }),
+    }), { params: Promise.resolve({ resource: "products", id: product.id }) });
+    expect(inactive.status).toBe(200);
+    expect((await db.product.findUniqueOrThrow({ where: { id: product.id } })).status).toBe("INACTIVE");
   });
 });
