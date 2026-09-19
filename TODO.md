@@ -46,20 +46,20 @@ Dependências: FP-002.
 Aceite: banco sobe do zero, migrations idempotentes, health check e pipeline
 lint/typecheck/unit/integration/build verdes.
 
-### FP-004 — Autenticação e isolamento — `IN_PROGRESS`
+### FP-004 — Autenticação e isolamento — `DONE`
 
 Dependências: FP-003.
 
-- [ ] Onboarding transacional de organização, primeira loja e OWNER.
-- [ ] Login, sessão, logout e recuperação segura preparada.
-- [ ] Usuários/papéis OWNER, MANAGER, CASHIER e STOCK.
-- [ ] Escopo por organização/loja derivado exclusivamente da sessão.
-- [ ] Impedir remoção do último OWNER e testar IDOR entre duas organizações.
+- [x] Onboarding transacional de organização, primeira loja e OWNER.
+- [x] Login, sessão, logout e recuperação segura preparada.
+- [x] Usuários/papéis OWNER, MANAGER, CASHIER e STOCK.
+- [x] Escopo por organização/loja derivado exclusivamente da sessão.
+- [x] Impedir remoção do último OWNER e testar IDOR entre duas organizações.
 
 Aceite: recursos cross-tenant retornam não encontrado; matriz de autorização e
 E2E de dois tenants verdes.
 
-### FP-005 — Cadastros — `PENDING`
+### FP-005 — Cadastros — `IN_PROGRESS`
 
 Dependências: FP-004.
 

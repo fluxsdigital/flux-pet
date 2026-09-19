@@ -18,32 +18,135 @@ enum StoreStatus {
   INACTIVE
 }
 
+enum MembershipRole {
+  OWNER
+  MANAGER
+  CASHIER
+  STOCK
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model Organization {
-  id        String             @id @default(cuid())
-  name      String
-  slug      String             @unique
-  status    OrganizationStatus @default(ACTIVE)
-  timezone  String             @default("America/Sao_Paulo")
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  stores    Store[]
-  audit     AuditEvent[]
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  status      OrganizationStatus @default(ACTIVE)
+  timezone    String             @default("America/Sao_Paulo")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  stores      Store[]
+  audit       AuditEvent[]
+  memberships Membership[]
 }
 
 model Store {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   name           String
   slug           String
-  status         StoreStatus  @default(ACTIVE)
-  timezone       String       @default("America/Sao_Paulo")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  status         StoreStatus   @default(ACTIVE)
+  timezone       String        @default("America/Sao_Paulo")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   audit          AuditEvent[]
+  access         StoreAccess[]
 
   @@unique([organizationId, slug])
   @@index([organizationId, status])
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false)
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  storeAccess   StoreAccess[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role           MembershipRole
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  storeAccess    StoreAccess[]
+
+  @@unique([organizationId, userId])
+  @@index([userId, status])
+}
+
+model StoreAccess {
+  id           String     @id @default(cuid())
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  storeId      String
+  store        Store      @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now())
+
+  @@unique([membershipId, storeId])
+  @@index([userId, storeId])
 }
 
 model AuditEvent {

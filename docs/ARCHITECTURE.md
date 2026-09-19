@@ -45,6 +45,19 @@ desenvolvimento descartáveis.
   `America/Sao_Paulo`.
 - Migrations são versionadas e produção usa `prisma migrate deploy`.
 
+## Autenticação e isolamento
+
+- Better Auth mantém credenciais com hash forte e sessões opacas em cookie
+  `HttpOnly`; o cadastro público direto da biblioteca fica desabilitado.
+- `/api/onboarding` cria usuário, credencial, organização, primeira loja,
+  vínculo OWNER, acesso à loja e auditoria em uma transação PostgreSQL.
+- `/api/auth/*` expõe login, sessão e logout. A tabela `Verification` prepara
+  recuperação de senha para um provedor de e-mail futuro, sem registrar tokens.
+- `getAccessContext` deriva organização, papel e lojas somente da sessão. Toda
+  consulta combina o ID do recurso com esse escopo; cross-tenant responde 404.
+- Papéis: OWNER, MANAGER, CASHIER e STOCK. Apenas OWNER altera vínculos; o
+  último OWNER ativo não pode ser rebaixado nem desativado.
+
 ## Comandos de qualidade
 
 ```bash
