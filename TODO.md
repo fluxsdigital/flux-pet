@@ -71,19 +71,19 @@ Dependências: FP-004.
 
 Aceite: CRUDs escopados e validados, sem exclusão destrutiva de item já usado.
 
-### FP-006 — Estoque — `IN_PROGRESS`
+### FP-006 — Estoque — `DONE`
 
 Dependências: FP-005.
 
-- [ ] Ledger append-only de entrada, saída, ajuste, venda e devolução.
-- [ ] Recebimento de compra, inventário e ajuste com motivo obrigatório.
-- [ ] Custo médio móvel com precisão decimal e teste de arredondamento.
-- [ ] Estoque mínimo, lote/validade quando informado e histórico auditável.
-- [ ] Impedir saldo negativo por padrão; exceção futura explícita por política.
+- [x] Ledger append-only de entrada, saída, ajuste, venda e devolução.
+- [x] Recebimento de compra, inventário e ajuste com motivo obrigatório.
+- [x] Custo médio móvel com precisão decimal e teste de arredondamento.
+- [x] Estoque mínimo, lote/validade quando informado e histórico auditável.
+- [x] Impedir saldo negativo por padrão; exceção futura explícita por política.
 
 Aceite: saldo deriva do ledger; concorrência e compensação testadas em banco.
 
-### FP-007 — PDV — `PENDING`
+### FP-007 — PDV — `IN_PROGRESS`
 
 Dependências: FP-006.
 

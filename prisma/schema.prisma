@@ -44,6 +44,21 @@ enum ProductUnit {
   PACKAGE
 }
 
+enum StockMovementType {
+  INITIAL
+  RECEIPT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  SALE
+  RETURN
+  SALE_REVERSAL
+}
+
+enum InventoryStatus {
+  DRAFT
+  CONFIRMED
+}
+
 model Organization {
   id          String             @id @default(cuid())
   name        String
@@ -103,28 +118,95 @@ model Category {
 }
 
 model Product {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   storeId        String
-  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  store          Store           @relation(fields: [storeId], references: [id], onDelete: Restrict)
   categoryId     String?
-  category       Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   name           String
   sku            String
   barcode        String?
-  unit           ProductUnit   @default(UNIT)
-  salePrice      Decimal       @db.Decimal(14, 2)
-  referenceCost  Decimal       @db.Decimal(14, 2)
+  unit           ProductUnit     @default(UNIT)
+  salePrice      Decimal         @db.Decimal(14, 2)
+  referenceCost  Decimal         @db.Decimal(14, 2)
+  minimumStock   Decimal         @default(0) @db.Decimal(14, 3)
   taxNotes       String?
-  status         CatalogStatus @default(ACTIVE)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status         CatalogStatus   @default(ACTIVE)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  stockBalance   StockBalance?
+  stockMovements StockMovement[]
+  inventoryItems InventoryItem[]
 
   @@unique([storeId, sku])
   @@unique([storeId, barcode])
   @@index([organizationId, storeId, status])
   @@index([organizationId, name])
+}
+
+model StockBalance {
+  id             String   @id @default(cuid())
+  organizationId String
+  storeId        String
+  productId      String   @unique
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity       Decimal  @default(0) @db.Decimal(14, 3)
+  averageCost    Decimal  @default(0) @db.Decimal(14, 4)
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, storeId])
+}
+
+model StockMovement {
+  id             String            @id @default(cuid())
+  organizationId String
+  storeId        String
+  productId      String
+  product        Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  type           StockMovementType
+  quantity       Decimal           @db.Decimal(14, 3)
+  unitCost       Decimal           @db.Decimal(14, 4)
+  balanceAfter   Decimal           @db.Decimal(14, 3)
+  referenceType  String?
+  referenceId    String?
+  lotNumber      String?
+  expiresAt      DateTime?
+  reason         String?
+  actorId        String
+  occurredAt     DateTime          @default(now())
+
+  @@index([organizationId, storeId, occurredAt])
+  @@index([productId, occurredAt])
+}
+
+model InventoryCount {
+  id             String          @id @default(cuid())
+  organizationId String
+  storeId        String
+  status         InventoryStatus @default(DRAFT)
+  notes          String?
+  actorId        String
+  confirmedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  items          InventoryItem[]
+
+  @@index([organizationId, storeId, createdAt])
+}
+
+model InventoryItem {
+  id               String         @id @default(cuid())
+  inventoryCountId String
+  inventoryCount   InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Restrict)
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  expectedQuantity Decimal        @db.Decimal(14, 3)
+  countedQuantity  Decimal        @db.Decimal(14, 3)
+  adjustmentId     String?
+
+  @@unique([inventoryCountId, productId])
 }
 
 model Supplier {

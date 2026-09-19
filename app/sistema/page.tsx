@@ -28,6 +28,7 @@ export default async function SystemFoundationPage() {
         </p>
         <div className="mt-space-lg flex flex-wrap gap-4">
           <Link className="inline-flex rounded-full bg-primary px-5 py-3 text-label-lg font-bold text-white" href="/sistema/cadastros">Abrir cadastros</Link>
+          <Link className="inline-flex rounded-full bg-secondary-container px-5 py-3 text-label-lg font-bold text-on-secondary-container" href="/sistema/estoque">Ver estoque</Link>
           <Link className="inline-flex px-2 py-3 text-label-lg font-bold text-primary" href="/">Voltar para a apresentação</Link>
         </div>
       </section>

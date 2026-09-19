@@ -5,6 +5,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { POST as onboard } from "../../app/api/onboarding/route";
 import { GET as getCatalogItem, PATCH as updateCatalogItem } from "../../app/api/catalog/[resource]/[id]/route";
 import { GET as listCatalog, POST as createCatalog } from "../../app/api/catalog/[resource]/route";
+import { POST as createInventory } from "../../app/api/stock/inventories/route";
+import { GET as getStock, POST as moveStock } from "../../app/api/stock/route";
 import { GET as getStore } from "../../app/api/stores/[id]/route";
 import { PATCH as updateUser } from "../../app/api/users/[id]/route";
 import { auth } from "../../lib/auth";
@@ -50,6 +52,10 @@ async function login(email: string) {
 
 describe("authentication and tenant isolation", () => {
   afterAll(async () => {
+    await db.inventoryItem.deleteMany({ where: { inventoryCount: { organizationId: { in: createdOrganizationIds } } } });
+    await db.inventoryCount.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.stockMovement.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.stockBalance.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.product.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.service.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.category.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
@@ -195,5 +201,43 @@ describe("authentication and tenant isolation", () => {
     }), { params: Promise.resolve({ resource: "products", id: product.id }) });
     expect(inactive.status).toBe(200);
     expect((await db.product.findUniqueOrThrow({ where: { id: product.id } })).status).toBe("INACTIVE");
+  });
+
+  it("keeps an immutable stock ledger, moving average cost and inventory adjustment", async () => {
+    const tenantA = await db.organization.findFirstOrThrow({ where: { name: "Pet Shop A" }, include: { stores: true } });
+    const tenantB = await db.organization.findFirstOrThrow({ where: { name: "Pet Shop B" } });
+    const product = await db.product.findFirstOrThrow({ where: { organizationId: tenantA.id } });
+    await db.product.update({ where: { id: product.id }, data: { status: "ACTIVE" } });
+    const cookieA = await login(emailA);
+    const cookieB = await login(emailB);
+
+    async function movement(type: "RECEIPT" | "ADJUSTMENT_OUT", quantity: number, unitCost?: number) {
+      return moveStock(new NextRequest("http://localhost/api/stock", {
+        method: "POST",
+        headers: { cookie: cookieA, "content-type": "application/json" },
+        body: JSON.stringify({ storeId: product.storeId, productId: product.id, type, quantity, unitCost, reason: "Teste auditável" }),
+      }));
+    }
+    expect((await movement("RECEIPT", 10, 20)).status).toBe(201);
+    expect((await movement("RECEIPT", 10, 30)).status).toBe(201);
+    expect((await movement("RECEIPT", 3, 10)).status).toBe(201);
+    expect((await movement("ADJUSTMENT_OUT", 4)).status).toBe(201);
+    let balance = await db.stockBalance.findUniqueOrThrow({ where: { productId: product.id } });
+    expect(balance.quantity.toString()).toBe("19");
+    expect(balance.averageCost.toString()).toBe("23.0435");
+
+    const inventory = await createInventory(new NextRequest("http://localhost/api/stock/inventories", {
+      method: "POST",
+      headers: { cookie: cookieA, "content-type": "application/json" },
+      body: JSON.stringify({ storeId: product.storeId, notes: "Contagem física", items: [{ productId: product.id, countedQuantity: 12 }] }),
+    }));
+    expect(inventory.status).toBe(201);
+    balance = await db.stockBalance.findUniqueOrThrow({ where: { productId: product.id } });
+    expect(balance.quantity.toString()).toBe("12");
+    expect(await db.stockMovement.count({ where: { productId: product.id } })).toBe(5);
+
+    const crossTenant = await getStock(new NextRequest(`http://localhost/api/stock?storeId=${product.storeId}`, { headers: { cookie: cookieB } }));
+    expect(crossTenant.status).toBe(404);
+    expect(tenantB.id).not.toBe(tenantA.id);
   });
 });
