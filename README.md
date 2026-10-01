@@ -41,9 +41,16 @@ As rotas antigas `/acolhedora`, `/gestao-inteligente` e
 
 ## Fundação do sistema
 
-- `/sistema`: entrada isolada da aplicação em construção.
+- `/sistema`: shell autenticado e dashboard executivo responsivo com dados
+  demonstrativos (financeiro, ponto de equilíbrio, estoque e recomendações).
+- `/sistema/pdv`, `/sistema/estoque` e `/sistema/cadastros`: módulos operacionais
+  preservados e acessíveis pela navegação lateral.
 - `/api/health`: saúde do processo e conexão PostgreSQL.
 - `prisma/`: schema e migrations versionadas.
 - [`TODO.md`](TODO.md): sequência de entregas e critérios de aceite.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): decisões e operação local.
 - [`docs/MVP.md`](docs/MVP.md): regras e fórmulas do MVP.
+
+Os indicadores atuais do dashboard são mocks tipados em
+`lib/dashboard-mock.ts`, explicitamente identificados na interface. A troca por
+API poderá manter o contrato de apresentação sem acoplar cálculos ao componente.

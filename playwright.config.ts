@@ -20,7 +20,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start -- -p 3187",
+    command: "BETTER_AUTH_URL=http://127.0.0.1:3187 npm run start -- -p 3187",
     reuseExistingServer: false,
     timeout: 30_000,
     url: "http://127.0.0.1:3187",
