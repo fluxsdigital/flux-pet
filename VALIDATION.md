@@ -24,3 +24,12 @@ Conversão para componentes validada em 2026-09-18.
 - O lint global permanece bloqueado por uma ocorrência anterior em
   `components/pos-manager.tsx:29` (`react-hooks/set-state-in-effect`), fora do
   escopo desta entrega e sem alteração para evitar sobrescrever trabalho alheio.
+
+## Preview sem banco — 2026-10-01
+
+- `/demonstracao` e seus módulos oferecem visualização pública somente leitura,
+  com dados fictícios, banner persistente de demonstração e `noindex`.
+- A prévia não chama APIs operacionais, não cria sessão, não contém segredo e
+  não altera a proteção de `/sistema`.
+- Playwright valida dashboard e navegação entre PDV, estoque e cadastros em
+  desktop e mobile.

@@ -43,6 +43,8 @@ As rotas antigas `/acolhedora`, `/gestao-inteligente` e
 
 - `/sistema`: shell autenticado e dashboard executivo responsivo com dados
   demonstrativos (financeiro, ponto de equilíbrio, estoque e recomendações).
+- `/demonstracao`: prévia pública, isolada e somente leitura do dashboard, PDV,
+  estoque e cadastros; não consulta banco nem substitui a autenticação normal.
 - `/sistema/pdv`, `/sistema/estoque` e `/sistema/cadastros`: módulos operacionais
   preservados e acessíveis pela navegação lateral.
 - `/api/health`: saúde do processo e conexão PostgreSQL.
