@@ -3,7 +3,7 @@
 ## Organização
 
 - `app/page.tsx` e `components/`: landing pública preservada.
-- `app/sistema/`: entrada da aplicação; receberá o shell autenticado em FP-004.
+- `app/sistema/`: shell autenticado e módulos operacionais.
 - `app/api/`: Route Handlers HTTP; `/api/health` verifica processo e banco.
 - `lib/config/`: contrato tipado de variáveis de servidor.
 - `lib/db.ts`: instância única do Prisma em desenvolvimento.
@@ -44,6 +44,8 @@ desenvolvimento descartáveis.
 - Instantes são UTC; o timezone padrão da organização/loja é
   `America/Sao_Paulo`.
 - Migrations são versionadas e produção usa `prisma migrate deploy`.
+- Vendas, pagamentos, baixa/devolução de estoque e auditoria são confirmados em
+  transações seriais. A chave de idempotência impede duplicação por retry.
 
 ## Autenticação e isolamento
 
@@ -57,6 +59,8 @@ desenvolvimento descartáveis.
   consulta combina o ID do recurso com esse escopo; cross-tenant responde 404.
 - Papéis: OWNER, MANAGER, CASHIER e STOCK. Apenas OWNER altera vínculos; o
   último OWNER ativo não pode ser rebaixado nem desativado.
+- A API e seus contratos operacionais estão inventariados em
+  [`API.md`](API.md).
 
 ## Comandos de qualidade
 

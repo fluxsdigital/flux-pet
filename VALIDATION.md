@@ -33,3 +33,14 @@ Conversão para componentes validada em 2026-09-18.
   não altera a proteção de `/sistema`.
 - Playwright valida dashboard e navegação entre PDV, estoque e cadastros em
   desktop e mobile.
+
+## API operacional e PDV — 2026-10-03
+
+- A API no App Router cobre autenticação/acesso, lojas/equipe, cadastros,
+  estoque e PDV com PostgreSQL, Prisma, Zod e isolamento por tenant/loja.
+- FP-007 adiciona turnos de caixa, vendas idempotentes, múltiplos pagamentos,
+  crediário, cancelamento e devolução compensatória sem apagar histórico.
+- Os testes de integração usam PostgreSQL real e verificam venda/retry, baixa e
+  reposição de estoque, recebível, pagamentos inválidos e fechamento do caixa.
+- Esta etapa é somente código e validação local; nenhum deploy ou acesso à VPS
+  foi realizado.

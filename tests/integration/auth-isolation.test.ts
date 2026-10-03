@@ -7,6 +7,11 @@ import { GET as getCatalogItem, PATCH as updateCatalogItem } from "../../app/api
 import { GET as listCatalog, POST as createCatalog } from "../../app/api/catalog/[resource]/route";
 import { POST as createInventory } from "../../app/api/stock/inventories/route";
 import { GET as getStock, POST as moveStock } from "../../app/api/stock/route";
+import { POST as openCash } from "../../app/api/pos/cash-sessions/route";
+import { POST as closeCash } from "../../app/api/pos/cash-sessions/[id]/close/route";
+import { POST as cancelSale } from "../../app/api/pos/sales/[id]/cancel/route";
+import { POST as returnSale } from "../../app/api/pos/sales/[id]/returns/route";
+import { POST as createSale } from "../../app/api/pos/sales/route";
 import { GET as getStore } from "../../app/api/stores/[id]/route";
 import { PATCH as updateUser } from "../../app/api/users/[id]/route";
 import { auth } from "../../lib/auth";
@@ -52,6 +57,14 @@ async function login(email: string) {
 
 describe("authentication and tenant isolation", () => {
   afterAll(async () => {
+    await db.saleReturnItem.deleteMany({ where: { saleReturn: { sale: { organizationId: { in: createdOrganizationIds } } } } });
+    await db.saleReturn.deleteMany({ where: { sale: { organizationId: { in: createdOrganizationIds } } } });
+    await db.saleCancellation.deleteMany({ where: { sale: { organizationId: { in: createdOrganizationIds } } } });
+    await db.accountReceivable.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.salePayment.deleteMany({ where: { sale: { organizationId: { in: createdOrganizationIds } } } });
+    await db.saleItem.deleteMany({ where: { sale: { organizationId: { in: createdOrganizationIds } } } });
+    await db.sale.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
+    await db.cashSession.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.inventoryItem.deleteMany({ where: { inventoryCount: { organizationId: { in: createdOrganizationIds } } } });
     await db.inventoryCount.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
     await db.stockMovement.deleteMany({ where: { organizationId: { in: createdOrganizationIds } } });
@@ -239,5 +252,81 @@ describe("authentication and tenant isolation", () => {
     const crossTenant = await getStock(new NextRequest(`http://localhost/api/stock?storeId=${product.storeId}`, { headers: { cookie: cookieB } }));
     expect(crossTenant.status).toBe(404);
     expect(tenantB.id).not.toBe(tenantA.id);
+  });
+
+  it("confirms an idempotent credit sale and cancels it with compensating stock", async () => {
+    const tenant = await db.organization.findFirstOrThrow({ where: { name: "Pet Shop A" }, include: { stores: true } });
+    const storeId = tenant.stores[0]!.id;
+    const product = await db.product.findFirstOrThrow({ where: { organizationId: tenant.id } });
+    const customer = await db.customer.findFirstOrThrow({ where: { organizationId: tenant.id } });
+    const cookie = await login(emailA);
+    const cashResponse = await openCash(new NextRequest("http://localhost/api/pos/cash-sessions", {
+      method: "POST", headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ storeId, openingAmount: 100 }),
+    }));
+    expect([200, 201]).toContain(cashResponse.status);
+    const cash = (await cashResponse.json()) as { id: string };
+    const body = {
+      storeId, cashSessionId: cash.id, customerId: customer.id, idempotencyKey: `sale-${suffix}`,
+      items: [{ productId: product.id, quantity: 2, discount: 0 }],
+      payments: [{ method: "CREDIT", amount: 119.8, dueDate: "2026-10-10T12:00:00.000Z" }],
+    };
+    const request = () => new NextRequest("http://localhost/api/pos/sales", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(body) });
+    const first = await createSale(request());
+    expect(first.status).toBe(201);
+    const sale = (await first.json()) as { id: string; netTotal: string };
+    expect(sale.netTotal).toBe("119.8");
+    const replay = await createSale(request());
+    expect(replay.status).toBe(200);
+    expect(replay.headers.get("Idempotency-Replayed")).toBe("true");
+    expect(await db.sale.count({ where: { idempotencyKey: body.idempotencyKey } })).toBe(1);
+    expect((await db.stockBalance.findUniqueOrThrow({ where: { productId: product.id } })).quantity.toString()).toBe("10");
+    expect(await db.accountReceivable.count({ where: { saleId: sale.id, status: "OPEN" } })).toBe(1);
+
+    const canceled = await cancelSale(new NextRequest(`http://localhost/api/pos/sales/${sale.id}/cancel`, {
+      method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ reason: "Cliente desistiu da compra" }),
+    }), { params: Promise.resolve({ id: sale.id }) });
+    expect(canceled.status).toBe(200);
+    expect((await db.sale.findUniqueOrThrow({ where: { id: sale.id } })).status).toBe("CANCELED");
+    expect((await db.stockBalance.findUniqueOrThrow({ where: { productId: product.id } })).quantity.toString()).toBe("12");
+    expect(await db.stockMovement.count({ where: { referenceId: sale.id } })).toBe(2);
+    expect(await db.accountReceivable.count({ where: { saleId: sale.id, status: "CANCELED" } })).toBe(1);
+
+    const returnBody = { ...body, customerId: undefined, idempotencyKey: `return-${suffix}`, payments: [{ method: "PIX", amount: 119.8 }] };
+    const returnSaleResponse = await createSale(new NextRequest("http://localhost/api/pos/sales", { method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify(returnBody) }));
+    expect(returnSaleResponse.status).toBe(201);
+    const returnable = (await returnSaleResponse.json()) as { id: string; items: Array<{ id: string }> };
+    const returned = await returnSale(new NextRequest(`http://localhost/api/pos/sales/${returnable.id}/returns`, {
+      method: "POST", headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ reason: "Devolução parcial solicitada", items: [{ saleItemId: returnable.items[0]!.id, quantity: 1 }] }),
+    }), { params: Promise.resolve({ id: returnable.id }) });
+    expect(returned.status).toBe(201);
+    expect((await db.sale.findUniqueOrThrow({ where: { id: returnable.id } })).status).toBe("PARTIALLY_RETURNED");
+    expect((await db.stockBalance.findUniqueOrThrow({ where: { productId: product.id } })).quantity.toString()).toBe("11");
+
+    const cancelAfterReturn = await cancelSale(new NextRequest(`http://localhost/api/pos/sales/${returnable.id}/cancel`, {
+      method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ reason: "Tentativa após devolução parcial" }),
+    }), { params: Promise.resolve({ id: returnable.id }) });
+    expect(cancelAfterReturn.status).toBe(403);
+    expect((await db.stockBalance.findUniqueOrThrow({ where: { productId: product.id } })).quantity.toString()).toBe("11");
+
+    const invalidSale = await createSale(new NextRequest("http://localhost/api/pos/sales", {
+      method: "POST", headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ ...body, idempotencyKey: `invalid-${suffix}`, payments: [{ method: "PIX", amount: 1 }] }),
+    }));
+    expect(invalidSale.status).toBe(403);
+    expect(await db.sale.count({ where: { idempotencyKey: `invalid-${suffix}` } })).toBe(0);
+
+    const closed = await closeCash(new NextRequest(`http://localhost/api/pos/cash-sessions/${cash.id}/close`, {
+      method: "POST", headers: { cookie, "content-type": "application/json" }, body: JSON.stringify({ closingAmount: 250 }),
+    }), { params: Promise.resolve({ id: cash.id }) });
+    expect(closed.status).toBe(200);
+    expect((await db.cashSession.findUniqueOrThrow({ where: { id: cash.id } })).status).toBe("CLOSED");
+
+    const saleAfterClose = await createSale(new NextRequest("http://localhost/api/pos/sales", {
+      method: "POST", headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ ...body, idempotencyKey: `closed-${suffix}` }),
+    }));
+    expect(saleAfterClose.status).toBe(404);
   });
 });

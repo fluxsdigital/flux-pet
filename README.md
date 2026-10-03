@@ -52,6 +52,8 @@ As rotas antigas `/acolhedora`, `/gestao-inteligente` e
 - [`TODO.md`](TODO.md): sequência de entregas e critérios de aceite.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): decisões e operação local.
 - [`docs/MVP.md`](docs/MVP.md): regras e fórmulas do MVP.
+- [`docs/API.md`](docs/API.md): endpoints, garantias transacionais, execução
+  local e requisitos previstos para a VPS.
 
 Os indicadores atuais do dashboard são mocks tipados em
 `lib/dashboard-mock.ts`, explicitamente identificados na interface. A troca por

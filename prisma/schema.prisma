@@ -59,34 +59,61 @@ enum InventoryStatus {
   CONFIRMED
 }
 
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum SaleStatus {
+  CONFIRMED
+  CANCELED
+  PARTIALLY_RETURNED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CARD
+  CREDIT
+}
+
+enum ReceivableStatus {
+  OPEN
+  PAID
+  CANCELED
+}
+
 model Organization {
-  id          String             @id @default(cuid())
-  name        String
-  slug        String             @unique
-  status      OrganizationStatus @default(ACTIVE)
-  timezone    String             @default("America/Sao_Paulo")
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  stores      Store[]
-  audit       AuditEvent[]
-  memberships Membership[]
-  categories  Category[]
-  products    Product[]
-  suppliers   Supplier[]
-  customers   Customer[]
-  services    Service[]
+  id           String              @id @default(cuid())
+  name         String
+  slug         String              @unique
+  status       OrganizationStatus  @default(ACTIVE)
+  timezone     String              @default("America/Sao_Paulo")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  stores       Store[]
+  audit        AuditEvent[]
+  memberships  Membership[]
+  categories   Category[]
+  products     Product[]
+  suppliers    Supplier[]
+  customers    Customer[]
+  services     Service[]
+  cashSessions CashSession[]
+  sales        Sale[]
+  receivables  AccountReceivable[]
 }
 
 model Store {
-  id             String        @id @default(cuid())
+  id             String              @id @default(cuid())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   name           String
   slug           String
-  status         StoreStatus   @default(ACTIVE)
-  timezone       String        @default("America/Sao_Paulo")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status         StoreStatus         @default(ACTIVE)
+  timezone       String              @default("America/Sao_Paulo")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   audit          AuditEvent[]
   access         StoreAccess[]
   categories     Category[]
@@ -94,6 +121,9 @@ model Store {
   suppliers      Supplier[]
   customers      Customer[]
   services       Service[]
+  cashSessions   CashSession[]
+  sales          Sale[]
+  receivables    AccountReceivable[]
 
   @@unique([organizationId, slug])
   @@index([organizationId, status])
@@ -139,6 +169,7 @@ model Product {
   stockBalance   StockBalance?
   stockMovements StockMovement[]
   inventoryItems InventoryItem[]
+  saleItems      SaleItem[]
 
   @@unique([storeId, sku])
   @@unique([storeId, barcode])
@@ -228,19 +259,21 @@ model Supplier {
 }
 
 model Customer {
-  id             String        @id @default(cuid())
+  id             String              @id @default(cuid())
   organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   storeId        String
-  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  store          Store               @relation(fields: [storeId], references: [id], onDelete: Restrict)
   name           String
   document       String?
   email          String?
   phone          String?
   petName        String?
-  status         CatalogStatus @default(ACTIVE)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status         CatalogStatus       @default(ACTIVE)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  sales          Sale[]
+  receivables    AccountReceivable[]
 
   @@index([organizationId, storeId, status])
   @@index([organizationId, name])
@@ -262,6 +295,7 @@ model Service {
   status          CatalogStatus @default(ACTIVE)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  saleItems       SaleItem[]
 
   @@unique([storeId, code])
   @@index([organizationId, storeId, status])
@@ -280,6 +314,8 @@ model User {
   accounts      Account[]
   memberships   Membership[]
   storeAccess   StoreAccess[]
+  cashSessions  CashSession[]
+  sales         Sale[]
 }
 
 model Session {
@@ -355,6 +391,139 @@ model StoreAccess {
 
   @@unique([membershipId, storeId])
   @@index([userId, storeId])
+}
+
+model CashSession {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status         CashSessionStatus @default(OPEN)
+  openingAmount  Decimal           @db.Decimal(14, 2)
+  closingAmount  Decimal?          @db.Decimal(14, 2)
+  openedAt       DateTime          @default(now())
+  closedAt       DateTime?
+  sales          Sale[]
+
+  @@index([organizationId, storeId, status])
+}
+
+model Sale {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store               @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  cashSessionId  String
+  cashSession    CashSession         @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  customerId     String?
+  customer       Customer?           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  actorId        String
+  actor          User                @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String
+  status         SaleStatus          @default(CONFIRMED)
+  grossTotal     Decimal             @db.Decimal(14, 2)
+  discountTotal  Decimal             @default(0) @db.Decimal(14, 2)
+  netTotal       Decimal             @db.Decimal(14, 2)
+  notes          String?
+  confirmedAt    DateTime            @default(now())
+  canceledAt     DateTime?
+  items          SaleItem[]
+  payments       SalePayment[]
+  cancellation   SaleCancellation?
+  returns        SaleReturn[]
+  receivables    AccountReceivable[]
+
+  @@unique([organizationId, storeId, idempotencyKey])
+  @@index([organizationId, storeId, confirmedAt])
+}
+
+model SaleItem {
+  id               String           @id @default(cuid())
+  saleId           String
+  sale             Sale             @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  productId        String?
+  product          Product?         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  serviceId        String?
+  service          Service?         @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  description      String
+  quantity         Decimal          @db.Decimal(14, 3)
+  unitPrice        Decimal          @db.Decimal(14, 2)
+  unitCostSnapshot Decimal          @db.Decimal(14, 4)
+  grossTotal       Decimal          @db.Decimal(14, 2)
+  discountTotal    Decimal          @default(0) @db.Decimal(14, 2)
+  netTotal         Decimal          @db.Decimal(14, 2)
+  returnItems      SaleReturnItem[]
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model SalePayment {
+  id        String        @id @default(cuid())
+  saleId    String
+  sale      Sale          @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(14, 2)
+  createdAt DateTime      @default(now())
+
+  @@index([saleId])
+}
+
+model SaleCancellation {
+  id         String   @id @default(cuid())
+  saleId     String   @unique
+  sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  reason     String
+  actorId    String
+  canceledAt DateTime @default(now())
+}
+
+model SaleReturn {
+  id        String           @id @default(cuid())
+  saleId    String
+  sale      Sale             @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  reason    String
+  amount    Decimal          @db.Decimal(14, 2)
+  actorId   String
+  createdAt DateTime         @default(now())
+  items     SaleReturnItem[]
+
+  @@index([saleId, createdAt])
+}
+
+model SaleReturnItem {
+  id           String     @id @default(cuid())
+  saleReturnId String
+  saleReturn   SaleReturn @relation(fields: [saleReturnId], references: [id], onDelete: Restrict)
+  saleItemId   String
+  saleItem     SaleItem   @relation(fields: [saleItemId], references: [id], onDelete: Restrict)
+  quantity     Decimal    @db.Decimal(14, 3)
+  amount       Decimal    @db.Decimal(14, 2)
+
+  @@index([saleItemId])
+}
+
+model AccountReceivable {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  storeId        String
+  store          Store            @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  saleId         String
+  sale           Sale             @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  customerId     String
+  customer       Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  amount         Decimal          @db.Decimal(14, 2)
+  dueDate        DateTime
+  status         ReceivableStatus @default(OPEN)
+  createdAt      DateTime         @default(now())
+  paidAt         DateTime?
+
+  @@index([organizationId, storeId, status, dueDate])
 }
 
 model AuditEvent {

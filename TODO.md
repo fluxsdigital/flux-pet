@@ -83,15 +83,15 @@ Dependências: FP-005.
 
 Aceite: saldo deriva do ledger; concorrência e compensação testadas em banco.
 
-### FP-007 — PDV — `IN_PROGRESS`
+### FP-007 — PDV — `DONE`
 
 Dependências: FP-006.
 
-- [ ] Caixa/turno, carrinho de produtos e serviços e cliente opcional.
-- [ ] Desconto por item/total com permissão e trilha de auditoria.
-- [ ] Dinheiro, Pix, cartão e crediário registrado como conta a receber.
-- [ ] Venda transacional com baixa de estoque e idempotência.
-- [ ] Cancelamento/devolução por lançamento compensatório, sem apagar venda.
+- [x] Caixa/turno, carrinho de produtos e serviços e cliente opcional.
+- [x] Desconto por item/total com permissão e trilha de auditoria.
+- [x] Dinheiro, Pix, cartão e crediário registrado como conta a receber.
+- [x] Venda transacional com baixa de estoque e idempotência.
+- [x] Cancelamento/devolução por lançamento compensatório, sem apagar venda.
 
 Aceite: venda concorrente não duplica baixa; totais/pagamentos fecham em
 centavos; cancelamento restaura saldo e preserva histórico.
