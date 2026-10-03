@@ -30,7 +30,7 @@ export function DemoShell({ children }: { children: ReactNode }) {
     {open && <button aria-label="Fechar menu" className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} type="button" />}
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-[min(82vw,19rem)] flex-col bg-white shadow-2xl transition-transform lg:hidden ${open ? "translate-x-0" : "-translate-x-full"}`}>{nav}</aside>
     <div className="lg:pl-64">
-      <div className="bg-on-primary-fixed px-4 py-2 text-center text-xs font-extrabold uppercase tracking-wider text-primary-fixed">Ambiente de demonstração · dados fictícios · somente leitura</div>
+      <div className="bg-on-primary-fixed px-4 py-2 text-center text-xs font-extrabold uppercase tracking-wider text-primary-fixed">Ambiente de demonstração · dados fictícios · nenhuma operação é real</div>
       <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-surface-border bg-surface/90 px-5 backdrop-blur md:px-8">
         <div className="flex min-w-0 items-center gap-3"><button aria-label="Abrir menu" className="grid h-10 w-10 place-items-center rounded-xl border border-surface-border bg-white lg:hidden" onClick={() => setOpen(true)} type="button"><Icon>menu</Icon></button><div><p className="text-sm font-bold">Pet Shop Amigo</p><p className="flex items-center gap-1 text-xs text-on-surface-variant"><Icon className="text-[15px]">storefront</Icon>Loja Centro</p></div></div>
         <span className="rounded-full bg-brand-soft px-3 py-2 text-xs font-extrabold text-primary">DEMO</span>

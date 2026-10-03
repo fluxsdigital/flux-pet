@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { DemoPos } from "@/components/demo-pos";
+import { DemoStock } from "@/components/demo-stock";
 import { Icon } from "@/components/ui";
 
 type Module = "pdv" | "estoque" | "cadastros";
@@ -26,6 +28,9 @@ const content = {
 } satisfies Record<Module, { eyebrow: string; title: string; description: string; action: string; stats: string[][]; columns: string[]; rows: string[][] }>;
 
 export function DemoModule({ module }: { module: Module }) {
+  if (module === "pdv") return <DemoPos />;
+  if (module === "estoque") return <DemoStock />;
+
   const data = content[module];
   return <main className="mx-auto max-w-[1400px] px-5 py-7 md:px-8 md:py-9">
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-sm font-bold text-primary">{data.eyebrow}</p><h1 className="mt-1 text-3xl font-extrabold">{data.title}</h1><p className="mt-2 text-sm text-on-surface-variant">{data.description}</p></div><button aria-disabled="true" className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-primary-container px-5 py-3 text-sm font-bold text-white opacity-70" title="Ações ficam desativadas na demonstração" type="button"><Icon className="text-[18px]">add</Icon>{data.action}</button></div>
