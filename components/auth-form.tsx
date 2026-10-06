@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useSyncExternalStore } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { loginError, onboardingError } from "@/lib/auth-feedback";
 import type { ApiErrorPayload, FieldErrors } from "@/lib/auth-feedback";
 
 type Mode = "login" | "onboarding";
+const subscribeToHydration = () => () => {};
 
 export function AuthForm({ mode, accountCreated = false }: { mode: Mode; accountCreated?: boolean }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [pending, setPending] = useState(false);
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -72,7 +74,7 @@ export function AuthForm({ mode, accountCreated = false }: { mode: Mode; account
   }
 
   return (
-    <form className="mt-space-lg space-y-space-sm" noValidate onSubmit={submit}>
+    <form className="mt-space-lg space-y-space-sm" method="post" noValidate onSubmit={submit}>
       {mode === "login" && accountCreated && (
         <p className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-800" role="status">
           Workspace criado com sucesso. Entre com o e-mail e a senha cadastrados.
@@ -88,7 +90,7 @@ export function AuthForm({ mode, accountCreated = false }: { mode: Mode; account
       <Field error={fieldErrors.email} label="E-mail" name="email" type="email" autoComplete="email" />
       <Field error={fieldErrors.password} label="Senha" name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={10} />
       {error && <p className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700" role="alert" aria-live="assertive">{error}</p>}
-      <button className="w-full rounded-full bg-primary px-6 py-3 font-bold text-white disabled:opacity-60" disabled={pending} type="submit">
+      <button className="w-full rounded-full bg-primary px-6 py-3 font-bold text-white disabled:opacity-60" disabled={pending || !hydrated} type="submit">
         {pending ? "Aguarde…" : mode === "login" ? "Entrar" : "Criar workspace"}
       </button>
       <p className="text-center text-sm text-on-surface-variant">

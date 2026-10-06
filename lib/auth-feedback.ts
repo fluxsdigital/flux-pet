@@ -22,6 +22,9 @@ export function onboardingError(payload: ApiErrorPayload, status: number) {
 }
 export function loginError(error: { code?: string; status?: number; statusCode?: number } | null | undefined) {
   const status = error?.status ?? error?.statusCode;
+  if (error?.code === "INVALID_ORIGIN" || status === 403) {
+    return "Este endereço não está autorizado para acesso. Abra o sistema pelo endereço configurado ou contate o suporte.";
+  }
   if (error?.code === "INVALID_EMAIL_OR_PASSWORD" || status === 401) {
     return "E-mail ou senha inválidos. Confira os dados e tente novamente.";
   }

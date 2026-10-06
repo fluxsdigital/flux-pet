@@ -28,6 +28,20 @@ test("redirects unauthenticated system access to sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/entrar$/);
 });
 
+test("prevents native form submission before client hydration", async ({ browser }, testInfo) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: testInfo.project.use.viewport,
+  });
+  const page = await context.newPage();
+  await page.goto("/criar-conta");
+
+  await expect(page.getByRole("button", { name: "Criar workspace" })).toBeDisabled();
+  await expect(page.locator("form")).toHaveAttribute("method", "post");
+  await expect(page).toHaveURL(/\/criar-conta$/);
+  await context.close();
+});
+
 test("creates a workspace, redirects to login, authenticates and grants system access", async ({ page }, testInfo) => {
   const suffix = `${Date.now()}-${testInfo.project.name}`.replace(/[^a-z0-9-]/gi, "").toLowerCase();
   const email = `e2e-${suffix}@example.test`;

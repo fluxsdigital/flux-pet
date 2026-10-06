@@ -21,6 +21,7 @@ describe("authentication feedback", () => {
     expect(loginError({ code: "INVALID_EMAIL_OR_PASSWORD", status: 401 })).toContain("E-mail ou senha inválidos");
     expect(loginError({ status: 429 })).toContain("Muitas tentativas");
     expect(loginError({ status: 503 })).toContain("temporariamente indisponível");
+    expect(loginError({ code: "INVALID_ORIGIN", status: 403 })).toContain("endereço não está autorizado");
     expect(loginError(undefined)).toContain("Verifique sua conexão");
   });
 });
@@ -39,5 +40,16 @@ describe("trusted authentication origins", () => {
       "https://pet.example.com",
       "http://127.0.0.1:3187",
     ]);
+  });
+
+  it("accepts the request's private LAN origin only in local development", () => {
+    vi.stubEnv("BETTER_AUTH_URL", "http://localhost:3000");
+    vi.stubEnv("APP_ENV", "development");
+    vi.stubEnv("NODE_ENV", "production");
+    const request = new Request("http://localhost/api", { headers: { origin: "http://192.168.100.7:3000" } });
+    expect(getTrustedOrigins(request)).toContain("http://192.168.100.7:3000");
+
+    vi.stubEnv("APP_ENV", "production");
+    expect(getTrustedOrigins(request)).not.toContain("http://192.168.100.7:3000");
   });
 });

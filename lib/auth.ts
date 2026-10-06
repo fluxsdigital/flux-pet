@@ -6,7 +6,7 @@ import { getTrustedOrigins } from "@/lib/auth-origins";
 
 export const auth = betterAuth({
   appName: "Flux Pet",
-  trustedOrigins: getTrustedOrigins(),
+  trustedOrigins: (request) => getTrustedOrigins(request),
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
