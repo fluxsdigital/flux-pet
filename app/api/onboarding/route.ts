@@ -3,13 +3,14 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { getLogger } from "@/lib/logger";
 
 const inputSchema = z.object({
-  ownerName: z.string().trim().min(2).max(100),
-  email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(10).max(128),
-  organizationName: z.string().trim().min(2).max(120),
-  storeName: z.string().trim().min(2).max(120),
+  ownerName: z.string().trim().min(2, "Informe seu nome com pelo menos 2 caracteres.").max(100, "O nome deve ter no máximo 100 caracteres."),
+  email: z.string().trim().toLowerCase().email("Informe um e-mail válido."),
+  password: z.string().min(10, "A senha deve ter pelo menos 10 caracteres.").max(128, "A senha deve ter no máximo 128 caracteres."),
+  organizationName: z.string().trim().min(2, "Informe o nome do pet shop.").max(120, "O nome do pet shop deve ter no máximo 120 caracteres."),
+  storeName: z.string().trim().min(2, "Informe o nome da primeira loja.").max(120, "O nome da loja deve ter no máximo 120 caracteres."),
 });
 
 function slugify(value: string) {
@@ -25,7 +26,13 @@ function slugify(value: string) {
 export async function POST(request: Request) {
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: "Dados inválidos", fields: parsed.error.flatten().fieldErrors }, { status: 422 });
+    return Response.json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Revise os campos destacados e tente novamente.",
+        fields: parsed.error.flatten().fieldErrors,
+      },
+    }, { status: 422 });
   }
 
   const data = parsed.data;
@@ -68,8 +75,27 @@ export async function POST(request: Request) {
     return Response.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return Response.json({ error: "Não foi possível criar a conta com estes dados" }, { status: 409 });
+      return Response.json({
+        error: {
+          code: "EMAIL_ALREADY_EXISTS",
+          message: "Este e-mail já está cadastrado. Entre com sua conta ou use outro e-mail.",
+        },
+      }, { status: 409 });
     }
-    throw error;
+    getLogger().error({ err: error }, "onboarding failed");
+    if (error instanceof Prisma.PrismaClientInitializationError || error instanceof Prisma.PrismaClientRustPanicError) {
+      return Response.json({
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "O serviço está temporariamente indisponível. Aguarde alguns minutos e tente novamente.",
+        },
+      }, { status: 503 });
+    }
+    return Response.json({
+      error: {
+        code: "ONBOARDING_FAILED",
+        message: "Não foi possível criar a conta agora. Tente novamente.",
+      },
+    }, { status: 500 });
   }
 }

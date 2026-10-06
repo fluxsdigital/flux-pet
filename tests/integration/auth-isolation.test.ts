@@ -115,9 +115,30 @@ describe("authentication and tenant isolation", () => {
       }),
     );
     expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "EMAIL_ALREADY_EXISTS",
+        message: "Este e-mail já está cadastrado. Entre com sua conta ou use outro e-mail.",
+      },
+    });
     expect(await db.organization.count({ where: { id: { in: createdOrganizationIds } } })).toBe(organizationsBefore);
     expect(await db.user.count({ where: { id: { in: createdUserIds } } })).toBe(usersBefore);
     expect(await db.organization.count({ where: { name: "Should Roll Back" } })).toBe(0);
+  });
+
+  it("returns actionable validation errors and rejects invalid credentials", async () => {
+    const invalid = await onboard(new Request("http://localhost/api/onboarding", {
+      method: "POST",
+      body: JSON.stringify({ ownerName: "A", email: "invalid", password: "short", organizationName: "", storeName: "" }),
+    }));
+    expect(invalid.status).toBe(422);
+    const validation = await invalid.json() as { error: { code: string; fields: Record<string, string[]> } };
+    expect(validation.error.code).toBe("VALIDATION_ERROR");
+    expect(validation.error.fields.email).toContain("Informe um e-mail válido.");
+    expect(validation.error.fields.password).toContain("A senha deve ter pelo menos 10 caracteres.");
+
+    const rejected = await auth.api.signInEmail({ body: { email: emailA, password: "wrong-password" }, asResponse: true });
+    expect(rejected.status).toBe(401);
   });
 
   it("returns not found for a store that belongs to another tenant", async () => {

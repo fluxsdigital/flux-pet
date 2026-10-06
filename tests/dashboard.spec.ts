@@ -1,15 +1,31 @@
 import { expect, test } from "@playwright/test";
 
+import { cleanupTenantByEmail, disconnectTestDatabase } from "./helpers/tenant-cleanup";
+
+const createdEmails = new Set<string>();
+
+test.afterAll(async () => {
+  for (const email of createdEmails) await cleanupTenantByEmail(email);
+  await disconnectTestDatabase();
+});
+
 test("renders the authenticated executive dashboard responsively", async ({ page }, testInfo) => {
   const suffix = `${testInfo.project.name}-${Date.now()}`;
+  const email = `dashboard-${suffix}@example.test`;
+  const password = "DemoSegura123!";
+  createdEmails.add(email);
   await page.goto("/criar-conta");
   await page.getByLabel("Seu nome").fill("Jieff Demo");
   await page.getByLabel("Nome do pet shop").fill("Flux Pet Demo");
   await page.getByLabel("Nome da primeira loja").fill("Loja Centro");
-  await page.getByLabel("E-mail").fill(`dashboard-${suffix}@example.test`);
-  await page.getByLabel("Senha").fill("DemoSegura123!");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill(password);
   await page.getByRole("button", { name: "Criar workspace" }).click();
 
+  await expect(page).toHaveURL(/\/entrar\?cadastro=sucesso$/);
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill(password);
+  await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/sistema$/);
   await expect(page.getByRole("heading", { name: /Veja como está seu negócio/ })).toBeVisible();
   await expect(page.getByText("Margem de contribuição", { exact: true })).toBeVisible();
