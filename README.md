@@ -11,9 +11,28 @@ Requer Node.js 20 ou superior.
 
 ```bash
 npm install
-npm run db:up
-npm run db:migrate
-npm run dev
+npm run local:setup
+npm run local:start
+```
+
+`local:setup` sobe o container `flux-pet-postgres`, aplica as migrations
+versionadas com `prisma migrate deploy` e gera o build de produção. Em seguida,
+`local:start` serve esse build em `http://localhost:3000`. Mantenha esse terminal
+aberto durante o uso. Para encerrar o banco depois de parar o servidor com
+`Ctrl+C`:
+
+```bash
+npm run local:stop
+```
+
+O volume persistente `app_flux_pet_postgres` é preservado ao parar ou recriar o
+container. O PostgreSQL fica restrito a `127.0.0.1:5434`; as credenciais locais
+e a `DATABASE_URL` ficam somente no `.env`, ignorado pelo Git. Copie
+`.env.example` para `.env` no primeiro uso.
+
+Para executar todas as validações:
+
+```bash
 npm run lint
 npm run typecheck
 npm run build
@@ -21,9 +40,6 @@ npm run test:unit
 npm run test:integration
 npm run test:e2e
 ```
-
-Copie `.env.example` para `.env` antes dos comandos de banco. O PostgreSQL
-local é publicado somente em `127.0.0.1:5434`.
 
 ## Conteúdo publicado
 
