@@ -15,11 +15,12 @@ npm run local:setup
 npm run local:start
 ```
 
-`local:setup` sobe o container `flux-pet-postgres`, aplica as migrations
-versionadas com `prisma migrate deploy` e gera o build de produção. Em seguida,
-`local:start` serve esse build em `http://localhost:3000`. Mantenha esse terminal
-aberto durante o uso. Para encerrar o banco depois de parar o servidor com
-`Ctrl+C`:
+`local:setup` constrói e sobe em segundo plano os containers persistentes
+`flux-pet-postgres` e `flux-pet-app`. A aplicação aplica as migrations
+versionadas com `prisma migrate deploy` antes de iniciar e fica disponível em
+`http://localhost:3000`, sem manter um terminal aberto. Os dois serviços usam
+`restart: unless-stopped` e voltam automaticamente com o Docker/host. Para
+encerrar ambos:
 
 ```bash
 npm run local:stop

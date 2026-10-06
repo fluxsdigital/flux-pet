@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { getLogger } from "@/lib/logger";
+import { requestUrl } from "@/lib/request-url";
 
 const inputSchema = z.object({
   ownerName: z.string().trim().min(2, "Informe seu nome com pelo menos 2 caracteres.").max(100, "O nome deve ter no máximo 100 caracteres."),
@@ -24,8 +25,12 @@ function slugify(value: string) {
 }
 
 export async function POST(request: Request) {
-  const parsed = inputSchema.safeParse(await request.json().catch(() => null));
+  const contentType = request.headers.get("content-type") ?? "";
+  const isNativeForm = contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data");
+  const input = isNativeForm ? Object.fromEntries(await request.formData()) : await request.json().catch(() => null);
+  const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
+    if (isNativeForm) return Response.redirect(requestUrl(request, "/criar-conta?erro=validacao"), 303);
     return Response.json({
       error: {
         code: "VALIDATION_ERROR",
@@ -72,9 +77,11 @@ export async function POST(request: Request) {
       return { userId: user.id, organizationId: organization.id, storeId: store.id };
     });
 
+    if (isNativeForm) return Response.redirect(requestUrl(request, "/entrar?cadastro=sucesso"), 303);
     return Response.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (isNativeForm) return Response.redirect(requestUrl(request, "/criar-conta?erro=conflito"), 303);
       return Response.json({
         error: {
           code: "EMAIL_ALREADY_EXISTS",
@@ -84,6 +91,7 @@ export async function POST(request: Request) {
     }
     getLogger().error({ err: error }, "onboarding failed");
     if (error instanceof Prisma.PrismaClientInitializationError || error instanceof Prisma.PrismaClientRustPanicError) {
+      if (isNativeForm) return Response.redirect(requestUrl(request, "/criar-conta?erro=indisponivel"), 303);
       return Response.json({
         error: {
           code: "SERVICE_UNAVAILABLE",
@@ -91,6 +99,7 @@ export async function POST(request: Request) {
         },
       }, { status: 503 });
     }
+    if (isNativeForm) return Response.redirect(requestUrl(request, "/criar-conta?erro=inesperado"), 303);
     return Response.json({
       error: {
         code: "ONBOARDING_FAILED",

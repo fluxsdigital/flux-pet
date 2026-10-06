@@ -28,7 +28,7 @@ test("redirects unauthenticated system access to sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/entrar$/);
 });
 
-test("prevents native form submission before client hydration", async ({ browser }, testInfo) => {
+test("supports native signup and login before client hydration", async ({ browser }, testInfo) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
     viewport: testInfo.project.use.viewport,
@@ -36,9 +36,25 @@ test("prevents native form submission before client hydration", async ({ browser
   const page = await context.newPage();
   await page.goto("/criar-conta");
 
-  await expect(page.getByRole("button", { name: "Criar workspace" })).toBeDisabled();
+  const suffix = `${Date.now()}-native-${testInfo.project.name}`.replace(/[^a-z0-9-]/gi, "").toLowerCase();
+  const email = `${suffix}@example.test`;
+  const password = "senha-nativa-segura-2026";
+  createdEmails.add(email);
+  await expect(page.getByRole("button", { name: "Criar workspace" })).toBeEnabled();
   await expect(page.locator("form")).toHaveAttribute("method", "post");
-  await expect(page).toHaveURL(/\/criar-conta$/);
+  await page.getByLabel("Seu nome").fill("Dono sem JavaScript");
+  await page.getByLabel("Nome do pet shop").fill(`Pet Nativo ${suffix}`);
+  await page.getByLabel("Nome da primeira loja").fill("Loja Nativa");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill(password);
+  await page.getByRole("button", { name: "Criar workspace" }).click();
+  await expect(page).toHaveURL(/\/entrar\?cadastro=sucesso$/);
+
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill(password);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/sistema$/);
+  await expect(page.getByText(`Pet Nativo ${suffix}`, { exact: true })).toBeVisible();
   await context.close();
 });
 

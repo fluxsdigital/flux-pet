@@ -21,9 +21,9 @@
     "db:status": "prisma migrate status",
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
-    "local:setup": "npm run db:up && npm run db:deploy && npm run build",
-    "local:start": "npm run start",
-    "local:stop": "npm run db:down",
+    "local:setup": "DOCKER_BUILDKIT=0 docker compose up -d --build --wait",
+    "local:start": "docker compose up -d --wait",
+    "local:stop": "docker compose down",
     "postinstall": "prisma generate"
   },
   "dependencies": {
